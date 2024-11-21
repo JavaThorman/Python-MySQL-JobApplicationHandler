@@ -29,7 +29,7 @@ Create a virtual environment and install dependencies:
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
-pip install -r requirements.txt
+pip install mysql-connector-python
 ```
 #### Alternatively, you can install the dependencies directly:
 ```bash
@@ -61,12 +61,15 @@ python main.py
 ### File Structure
 ```bash
 job-application-tracker/
-├── config.py             # Database configuration
-├── database.py           # Database connection and queries
-├── main.py               # Entry point for running the program
-├── models.py             # Job application model
-├── requirements.txt      # Python dependencies
-└── README.md             # Project documentation
+├── Database/
+│   ├── config.py             # Database configuration
+│   └── database.py           # Database connection and queries
+├── Program/
+│   ├── models.py             # Job application model
+│   └── program.py            # Program entry point
+├── main.py                   # Entry point for running the program
+└── README.md                 # Project documentation 
+
 ```
 
 # License
