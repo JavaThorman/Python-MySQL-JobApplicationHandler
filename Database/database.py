@@ -1,6 +1,6 @@
 import mysql.connector
 from mysql.connector import Error
-import config
+from Database import config
 
 
 class Database:
