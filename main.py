@@ -1,5 +1,5 @@
 import sys
-from program import start_program  # Importing the 'start_program' function from the 'program' module
+from Program.program import start_program  # Importing the 'start_program' function from the 'program' module
 
 # Prompting the user for input on whether they want to start the program
 choice = input("\n\nWould you like to start this program? (Y/N): ").lower()
