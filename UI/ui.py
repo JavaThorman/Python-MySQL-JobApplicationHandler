@@ -18,6 +18,8 @@ class JobApplicationTrackerUI(ctk.CTk):
 
         # Initialize the database
         self.db = Database()
+        # Initialize the db tables
+        self.db.create_table()  # Ensure tables are created
 
         # Create frames for different views (initialize only once)
         self.menu_frame = ctk.CTkFrame(self)
