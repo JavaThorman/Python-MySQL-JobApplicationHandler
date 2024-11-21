@@ -6,15 +6,32 @@ from Database import config
 class Database:
     def __init__(self):
         try:
-            # Establish connection to the MySQL database
+            # Connect to MySQL server (without specifying a database)
             self.connection = mysql.connector.connect(
                 host=config.DB_HOST,
                 user=config.DB_USER,
-                password=config.DB_PASSWORD,
-                database=config.DB_NAME
+                password=config.DB_PASSWORD
             )
             if self.connection.is_connected():
-                print("\nConnection successful.\n")
+                print("\nConnection to MySQL server successful.\n")
+
+            # Check if the database exists, if not, create it
+            cursor = self.connection.cursor()
+            cursor.execute("SHOW DATABASES LIKE 'job_tracker_db';")
+            result = cursor.fetchone()
+
+            if not result:
+                # Database does not exist, so create it
+                cursor.execute("CREATE DATABASE job_tracker_db;")
+                print("\nDatabase 'job_tracker_db' created successfully.\n")
+
+            # Now connect to the job_tracker_db
+            self.connection.database = 'job_tracker_db'
+
+            # Check the connection to the specified database
+            if self.connection.is_connected():
+                print("\nConnected to the 'job_tracker_db' database.\n")
+
         except Error as e:
             print(f"Error: {e}")
             self.connection = None
@@ -37,15 +54,47 @@ class Database:
         cursor.execute(create_table_query)
         self.connection.commit()
 
-    def insert_job_application(self, job_provider, job_description, job_link, resume_used, personal_letter_used):
+    def get_job_application_details(self, job_id):
         cursor = self.connection.cursor()
-        insert_query = """
-        INSERT INTO job_applications (job_provider, job_description, job_link, resume_used_for_application, personal_letter_used_for_application)
-        VALUES (%s, %s, %s, %s, %s);
-        """
-        cursor.execute(insert_query, (job_provider, job_description, job_link, resume_used, personal_letter_used))
-        self.connection.commit()
-        print("Job application added successfully.\n")
+        query = "SELECT job_provider, job_description FROM job_applications WHERE id = %s;"
+        cursor.execute(query, (job_id,))
+        result = cursor.fetchone()
+
+        if result:
+            # Ensure the result is a tuple with 2 elements (job_provider, job_description)
+            return result  # (job_provider, job_description)
+        else:
+            return None  # No job found with the given ID
+
+    def insert_job_application(self, job_provider, job_description, job_link, resume_used, personal_letter_used):
+        try:
+            # Create a cursor object to interact with the database
+            cursor = self.connection.cursor()
+
+            # SQL query to insert the job application into the database
+            insert_query = """
+            INSERT INTO job_applications (job_provider, job_description, job_link, resume_used_for_application, personal_letter_used_for_application)
+            VALUES (%s, %s, %s, %s, %s);
+            """
+
+            # Execute the query with the provided parameters
+            cursor.execute(insert_query, (job_provider, job_description, job_link, resume_used, personal_letter_used))
+
+            # Commit the transaction to save the changes to the database
+            self.connection.commit()
+
+            # Check if the insert was successful by verifying rowcount
+            if cursor.rowcount > 0:
+                return "Successful"
+            else:
+                return "Not Successful"
+        except Exception as e:
+            # If an error occurs, print the error and return failure
+            print(f"Error inserting job application: {e}")
+            return "Not Successful"
+        finally:
+            # Close the cursor to release the database resources
+            cursor.close()
 
     def update_job_application(self, job_id, job_provider=None, job_description=None, job_link=None, resume_used=None,
                                personal_letter_used=None):
@@ -80,7 +129,7 @@ class Database:
 
         cursor.execute(update_query, tuple(update_values))
         self.connection.commit()
-        print(f"Job application with ID {job_id} updated successfully.\n")
+
 
     def update_application_response_and_note(self, job_id, application_response=None, note=None):
         cursor = self.connection.cursor()
@@ -103,14 +152,14 @@ class Database:
 
         cursor.execute(update_query, tuple(update_values))
         self.connection.commit()
-        print(f"Job application with ID {job_id} updated with response and note.\n")
+
 
     def delete_job_application(self, job_id):
         cursor = self.connection.cursor()
         delete_query = "DELETE FROM job_applications WHERE id = %s;"
         cursor.execute(delete_query, (job_id,))
         self.connection.commit()
-        print(f"Job application with ID {job_id} deleted successfully.\n")
+
 
     def get_job_application_by_id(self, job_id):
         cursor = self.connection.cursor()
@@ -125,23 +174,21 @@ class Database:
         cursor.execute(select_query)
         result = cursor.fetchall()
 
+        applications = []
         if result:
-            print("Job Applications:\n")
             for row in result:
-                application_details = (
-                    f"ID: {row[0]}, Provider: {row[1]}, Description: {row[2]}, "
-                    f"Link: {row[3]}, Resume: {row[4]}, Letter: {row[5]}"
-                )
-
-                if row[6] is not None:
-                    application_details += f"\nResponse: {row[6]}"
-
-                if row[7] is not None:
-                    application_details += f", Note: {row[7]}"
-
-                print(application_details)
-        else:
-            print("No job applications found.\n")
+                application_details = {
+                    "id": row[0],
+                    "job_provider": row[1],
+                    "job_description": row[2],
+                    "job_link": row[3],
+                    "resume_used": row[4],
+                    "personal_letter_used": row[5],
+                    "application_response": row[6],
+                    "note": row[7],
+                }
+                applications.append(application_details)
+        return applications
 
     def check_job_application_exists(self, job_id):
         cursor = self.connection.cursor()
